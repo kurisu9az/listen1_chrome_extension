@@ -75,6 +75,14 @@ const PROVIDERS = [
     support_login: false,
     id: 'my',
   },
+  {
+    name: 'directlink',
+    instance: directlink,
+    searchable: false,
+    hidden: true,
+    support_login: false,
+    id: 'dl',
+  },
 ];
 
 function getProviderByName(sourceName) {

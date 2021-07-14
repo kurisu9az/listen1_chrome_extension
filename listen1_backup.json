@@ -1,0 +1,35 @@
+{
+    "myplaylist_58266c13-4899-e612-9d86-c8e8d09f580e": {
+        "is_mine": 1,
+        "info": {
+            "cover_img_url": "images/mycover.jpg",
+            "title": "test1",
+            "id": "myplaylist_58266c13-4899-e612-9d86-c8e8d09f580e",
+            "source_url": ""
+        },
+        "tracks": [
+            {
+                "id": "dltrack_440353010",
+                "title": "#Lov3 #Ngẫu Hứng",
+                "artist": "Hoaprox",
+                "artist_id": "neartist_1177234",
+                "album": "#Lov3 #Ngẫu Hứng",
+                "album_id": "nealbum_34987109",
+                "source": "directlink",
+                "source_url": "https://link.jscdn.cn/1drv/aHR0cHM6Ly8xZHJ2Lm1zL3UvcyFBalhadEwtNndfLWV3MlhVYWx4bjM3Z3p5ZkFtP2U9MDhaMzhw.mp3",
+                "img_url": "https://p2.music.126.net/znZQMUXniXqwjJrXMJO_Qg==/109951163100026676.jpg"
+            }
+        ]
+    },
+    "language": "zh-CN",
+    "player-settings": {
+        "playmode": 0,
+        "nowplaying_track_id": -1,
+        "volume": 90
+    },
+    "current-playing": [],
+    "theme": "white",
+    "playerlists": [
+        "myplaylist_58266c13-4899-e612-9d86-c8e8d09f580e"
+    ]
+}

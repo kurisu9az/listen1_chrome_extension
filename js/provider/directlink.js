@@ -5,7 +5,7 @@ class directlink {
     
     static bootstrap_track(track, success, failure) {
         const sound = {};
-        [sound.url] = track.source_url;
+        sound.url = track.source_url;
         sound.platform = 'directlink';
     
         success(sound);
