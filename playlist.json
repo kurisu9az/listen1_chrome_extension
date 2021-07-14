@@ -1,0 +1,19 @@
+{
+    "data": {
+        "cover": "images/mycover.jpg",
+        "title": "directlink playlist",
+        "tracks": [
+            {
+                "id": "123123123",
+                "title": "#Lov3 #Ngẫu Hứng",
+                "artist": "Hoaprox",
+                "artist_url": "1177234",
+                "album": "#Lov3 #Ngẫu Hứng",
+                "album_url": "34987109",
+                "source_url": "https://link.jscdn.cn/1drv/aHR0cHM6Ly8xZHJ2Lm1zL3UvcyFBalhadEwtNndfLWV3MlhVYWx4bjM3Z3p5ZkFtP2U9MDhaMzhw.mp3",
+                "cover": "https://p2.music.126.net/znZQMUXniXqwjJrXMJO_Qg==/109951163100026676.jpg"
+            }
+        ]
+    }
+    
+}
