@@ -79,7 +79,7 @@ const PROVIDERS = [
     name: 'directlink',
     instance: directlink,
     searchable: false,
-    hidden: true,
+    hidden: false,
     support_login: false,
     id: 'dl',
   },
