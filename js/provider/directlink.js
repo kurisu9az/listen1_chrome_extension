@@ -64,6 +64,17 @@ class directlink {
 
     static loadResult(url, prefix) {
       const playlist_url = getParameterByName('list_id', url).split(prefix).pop();
+
+      if (playlist_url == undefined || playlist_url == null) {
+        return {
+          success: (fn) => 
+            fn({
+              info: {},
+              tracks: [],
+            })
+        }
+      }
+
       return {
         success: (fn) => {
           axios.get(playlist_url).then((response) => {
@@ -95,12 +106,20 @@ class directlink {
     }
 
     static lyric(url) {
-        // const track_id = getParameterByName('track_id', url).split('_').pop();
         const lyric_url = getParameterByName('lyric_url', url);
+        if (lyric_url == undefined || lyric_url == null) {
+          return {
+            success: (fn) => 
+              fn({
+                lyric: "",
+              })
+          }
+        }
+        
         return {
           success: (fn) => {
             axios.get(lyric_url).then((response) => {
-              const { data } = response;
+              const { data } = response.data;
               return fn({
                 lyric: data,
               });
