@@ -119,7 +119,7 @@ class directlink {
         return {
           success: (fn) => {
             axios.get(lyric_url).then((response) => {
-              const { data } = response.data;
+              const { data } = response;
               return fn({
                 lyric: data,
               });
