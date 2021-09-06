@@ -3,18 +3,56 @@
   <div class="page" ng-init="lastfm.updateStatus(); updateGithubStatus();">
     <div class="site-wrapper-innerd">
       <div class="cover-container">
-        <!-- <div class="settings-title">
-          <span>{{ $t('_LANGUAGE') }}</span>
+        <div class="settings-title">
+          <span>{{ t('_LANGUAGE') }}</span>
         </div>
         <div class="settings-content">
-          <div>
-            <button class="language-button" ng-click="setLang('zh-CN')">简体中文</button>
-            <button class="language-button" ng-click="setLang('zh-TC')">繁体中文</button>
-            <button class="language-button" ng-click="setLang('en-US')">English</button>
-            <button class="language-button" ng-click="setLang('fr-FR')">French</button>
-          </div>
+          <button class="language-button" @click="locale = 'zh-CN'">简体中文</button>
+          <button class="language-button" @click="locale = 'zh-TC'">繁体中文</button>
+          <button class="language-button" @click="locale = 'en-US'">English</button>
+          <button class="language-button" @click="locale = 'fr-FR'">French</button>
         </div>
         <div class="settings-title">
+          <span>{{ t('_NOWPLAYING_DISPLAY') }}</span>
+        </div>
+        <div class="settings-content">
+          <div class="shortcut">
+            <vue-feather
+              v-show="!enableNowplayingCoverBackground"
+              type="square"
+              @click="toggleCoverBackground"
+            ></vue-feather>
+            <vue-feather
+              v-show="enableNowplayingCoverBackground"
+              type="check-square"
+              @click="toggleCoverBackground"
+            ></vue-feather>
+            {{ t('_NOWPLAYING_COVER_BACKGROUND_NOTICE') }}
+          </div>
+          <div class="shortcut">
+            <vue-feather v-show="!enableNowplayingBitrate" type="square" @click="toggleBitrate"></vue-feather>
+            <vue-feather
+              v-show="enableNowplayingBitrate"
+              type="check-square"
+              @click="toggleBitrate"
+            ></vue-feather>
+            {{ t('_NOWPLAYING_BITRATE_NOTICE') }}
+          </div>
+          <div class="shortcut">
+            <vue-feather
+              v-show="!enableNowplayingPlatform"
+              type="square"
+              @click="togglePlayingPlatform"
+            ></vue-feather>
+            <vue-feather
+              v-show="enableNowplayingPlatform"
+              type="check-square"
+              @click="togglePlayingPlatform"
+            ></vue-feather>
+            {{ t('_NOWPLAYING_PLATFORM_NOTICE') }}
+          </div>
+        </div>
+        <!-- <div class="settings-title">
           <span>{{ $t('_THEME') }}</span>
         </div>
         <div class="settings-content">
@@ -241,26 +279,27 @@
           proxyMode.displayText
           <span v-show="proxyMode_name == 'custom'">proxyRules</span>
           <button ng-click="showDialog(12)">{{ $t('_MODIFY') }}</button>
-        </div> -->
+        </div>-->
         <div class="settings-title">
-          <span>{{ $t('_ABOUT') }}</span>
+          <span>{{ t('_ABOUT') }}</span>
         </div>
         <div class="settings-content">
           <p>
-            Listen 1 {{ $t('_HOMEPAGE') }}:
-            <a open-url="'https://listen1.github.io/listen1/'">https://listen1.github.io/listen1/</a>
+            Listen 1 {{ t('_HOMEPAGE') }}:
+            <Href to="https://listen1.github.io/listen1/" />
           </p>
-          <p>Listen 1 {{ $t('_EMAIL') }}: githublisten1@gmail.com</p>
           <p>
-            {{ $t('_FEEDBACK') }}:
-            <a v-if="isChrome" open-url="'https://github.com/listen1/listen1_chrome_extension/issues'">
-              https://github.com/listen1/listen1_chrome_extension/issues
-            </a>
-            <a v-if="!isChrome" open-url="'https://github.com/listen1/listen1_desktop/issues'">https://github.com/listen1/listen1_desktop/issues</a>
+            Listen 1 {{ t('_EMAIL') }}:
+            <Href to="mailto:githublisten1@gmail.com" display="githublisten1@gmail.com" />
           </p>
-          <p>{{ $t('_DESIGNER') }}: iparanoid</p>
-          <p>{{ $t('_VERSION') }}: v3.0.0 (DEVELOPER VERSION)</p>
-          <p>LICENSE: {{ $t('_LICENSE_NOTICE') }}</p>
+          <p>
+            {{ t('_FEEDBACK') }}:
+            <Href v-if="isChrome" to="https://github.com/listen1/listen1_chrome_extension/issues" />
+            <Href v-else to="https://github.com/listen1/listen1_desktop/issues" />
+          </p>
+          <p>{{ t('_DESIGNER') }}: iparanoid</p>
+          <p>{{ `${t('_VERSION')}: v${version}` }} (DEVELOPER VERSION)</p>
+          <p>LICENSE: {{ t('_LICENSE_NOTICE') }}</p>
           <!-- <p v-show="lastestVersion != ''">{{ $t('_LATEST_VERSION') }}: lastestVersion</p> -->
         </div>
       </div>
@@ -268,14 +307,20 @@
   </div>
 </template>
 
-<script>
-export default {
-  data() {
-    return {
-      isChrome: true
-    };
-  }
-};
+<script setup>
+import { useI18n } from 'vue-i18n';
+import { useStore } from 'vuex';
+import Href from '../components/Href.vue'
+import { version } from "../../package.json"
+const { t, locale } = useI18n();
+const store = useStore();
+const isChrome = true;
+let enableNowplayingCoverBackground = $computed(() => store.state.settings.enableNowplayingCoverBackground)
+let enableNowplayingBitrate = $computed(() => store.state.settings.enableNowplayingBitrate)
+let enableNowplayingPlatform = $computed(() => store.state.settings.enableNowplayingPlatform)
+const toggleCoverBackground = () => store.dispatch("settings/setState", { enableNowplayingCoverBackground: !enableNowplayingCoverBackground })
+const toggleBitrate = () => store.dispatch("settings/setState", { enableNowplayingBitrate: !enableNowplayingBitrate })
+const togglePlayingPlatform = () => store.dispatch("settings/setState", { enableNowplayingPlatform: !enableNowplayingPlatform })
 </script>
 
 <style>

@@ -1,78 +1,68 @@
-/* eslint-disable no-param-reassign */
-/* eslint-disable no-unused-vars */
+import { getParameterByName } from './lowebutil';
+
 /* global getParameterByName */
+
 const defaultLocalMusicPlaylist = {
   tracks: [],
   info: {
     id: 'lmplaylist_reserve',
     cover_img_url: 'images/mycover.jpg',
     title: '本地音乐',
-    source_url: '',
-  },
+    source_url: ''
+  }
 };
 
-class localmusic {
+export default class localmusic {
   static show_playlist(url, hm) {
     return {
       success: (fn) =>
         fn({
-          result: [],
-        }),
+          result: []
+        })
     };
   }
 
-  static lm_get_playlist(url) {
+  static async lm_get_playlist(url) {
     const list_id = getParameterByName('list_id', url);
-    return {
-      success: (fn) => {
-        let playlist = localStorage.getObject(list_id);
 
-        if (playlist === null || playlist === undefined) {
-          playlist = defaultLocalMusicPlaylist;
-        }
-        fn(playlist);
-      },
-    };
+    let playlist = localStorage.getObject(list_id);
+
+    if (playlist === null || playlist === undefined) {
+      playlist = defaultLocalMusicPlaylist;
+    }
+    return playlist;
   }
 
-  static lm_album(url) {
+  static async lm_album(url) {
     const album = getParameterByName('list_id', url).split('_').pop();
-    return {
-      success: (fn) => {
-        const list_id = 'lmplaylist_reserve';
-        let playlist = localStorage.getObject(list_id);
 
-        if (playlist === null || playlist === undefined) {
-          playlist = JSON.parse(JSON.stringify(defaultLocalMusicPlaylist));
-          playlist.info.title = album;
-        } else {
-          playlist.info.title = album;
-          playlist.tracks = playlist.tracks.filter((tr) => tr.album === album);
-        }
-        fn(playlist);
-      },
-    };
+    const list_id = 'lmplaylist_reserve';
+    let playlist = localStorage.getObject(list_id);
+
+    if (playlist === null || playlist === undefined) {
+      playlist = JSON.parse(JSON.stringify(defaultLocalMusicPlaylist));
+      playlist.info.title = album;
+    } else {
+      playlist.info.title = album;
+      playlist.tracks = playlist.tracks.filter((tr) => tr.album === album);
+    }
+    return playlist;
   }
 
-  static lm_artist(url) {
+  static async lm_artist(url) {
     const artist = getParameterByName('list_id', url).split('_').pop();
-    return {
-      success: (fn) => {
-        const list_id = 'lmplaylist_reserve';
-        let playlist = localStorage.getObject(list_id);
 
-        if (playlist === null || playlist === undefined) {
-          playlist = JSON.parse(JSON.stringify(defaultLocalMusicPlaylist));
-          playlist.info.title = artist;
-        } else {
-          playlist.info.title = artist;
-          playlist.tracks = playlist.tracks.filter(
-            (tr) => tr.artist === artist
-          );
-        }
-        fn(playlist);
-      },
-    };
+    const list_id = 'lmplaylist_reserve';
+    let playlist = localStorage.getObject(list_id);
+
+    if (playlist === null || playlist === undefined) {
+      playlist = JSON.parse(JSON.stringify(defaultLocalMusicPlaylist));
+      playlist.info.title = artist;
+    } else {
+      playlist.info.title = artist;
+      playlist.tracks = playlist.tracks.filter((tr) => tr.artist === artist);
+    }
+    return playlist;
   }
 
   static bootstrap_track(track, success, failure) {
@@ -83,25 +73,19 @@ class localmusic {
     success(sound);
   }
 
-  static search(url) {
+  static async search(url) {
     const searchType = getParameterByName('type', url);
     return {
-      success: (fn) =>
-        fn({
-          result: [],
-          total: 0,
-          type: searchType,
-        }),
+      result: [],
+      total: 0,
+      type: searchType
     };
   }
 
-  static lyric(url) {
+  static async lyric(url) {
     return {
-      success: (fn) =>
-        fn({
-          lyric: '',
-          tlyric: '',
-        }),
+      lyric: '',
+      tlyric: ''
     };
   }
 
@@ -117,13 +101,11 @@ class localmusic {
     tracks.forEach((tr) => {
       tracksIdSet[tr.id] = true;
     });
-    playlist.tracks = tracks.concat(
-      playlist.tracks.filter((tr) => tracksIdSet[tr.id] !== true)
-    );
+    playlist.tracks = tracks.concat(playlist.tracks.filter((tr) => tracksIdSet[tr.id] !== true));
     localStorage.setObject(list_id, playlist);
 
     return {
-      success: (fn) => fn({ list_id, playlist }),
+      success: (fn) => fn({ list_id, playlist })
     };
   }
 
@@ -132,7 +114,7 @@ class localmusic {
     return {
       success: (fn) => {
         fn(result);
-      },
+      }
     };
   }
 
@@ -161,13 +143,14 @@ class localmusic {
 
     // eslint-disable-next-line consistent-return
     return {
-      success: (fn) => fn(),
+      success: (fn) => fn()
     };
   }
 
-  static get_playlist_filters() {
+  static async get_playlist_filters() {
     return {
-      success: (fn) => fn({ recommend: [], all: [] }),
+      recommend: [],
+      all: []
     };
   }
 

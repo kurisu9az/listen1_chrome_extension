@@ -1,6 +1,6 @@
-/* eslint-disable no-unused-vars */
-/* global async getParameterByName forge */
 import axios from 'axios';
+import concat from 'async-es/concat';
+import forge from 'node-forge';
 import { getParameterByName } from './lowebutil';
 
 const axiosTH = axios.create({
@@ -14,11 +14,7 @@ axiosTH.interceptors.request.use(
     const q = new URLSearchParams(params);
     q.sort();
     const signStr = decodeURIComponent(`${q.toString()}0b50b02fd0d73a9c4c8c3a781c30845f`);
-    params.sign = forge.md5
-      .create()
-      .update(forge.util.encodeUtf8(signStr))
-      .digest()
-      .toHex();
+    params.sign = forge.md.md5.create().update(forge.util.encodeUtf8(signStr)).digest().toHex();
 
     return { ...config, params };
   },
@@ -46,9 +42,7 @@ export default class taihe {
   }
 
   static th_render_tracks(url, page, callback) {
-    const list_id = getParameterByName('list_id', url)
-      .split('_')
-      .pop();
+    const list_id = getParameterByName('list_id', url).split('_').pop();
     axiosTH
       .get('/tracklist/info', {
         params: {
@@ -64,127 +58,89 @@ export default class taihe {
       });
   }
 
-  static search(url) {
+  static async search(url) {
     const keyword = getParameterByName('keywords', url);
     const curpage = getParameterByName('curpage', url);
     const searchType = getParameterByName('type', url);
     if (searchType === '1') {
       return {
-        success: (fn) =>
-          fn({
-            result: [],
-            total: 0,
-            type: searchType
-          })
+        result: [],
+        total: 0,
+        type: searchType
       };
     }
-    return {
-      success: (fn) => {
-        axiosTH
-          .get('/search', {
-            params: {
-              word: keyword,
-              pageNo: curpage || 1,
-              type: 1
-            }
-          })
-          .then((res) => {
-            const { data } = res;
-            const tracks = data.data.typeTrack.map(this.th_convert_song);
-            return fn({
-              result: tracks,
-              total: data.data.total,
-              type: searchType
-            });
-          })
-          .catch(() =>
-            fn({
-              result: [],
-              total: 0,
-              type: searchType
-            })
-          );
-      }
-    };
+    try {
+      const res = await axiosTH.get('/search', {
+        params: {
+          word: keyword,
+          pageNo: curpage || 1,
+          type: 1
+        }
+      });
+      const { data } = res;
+      const tracks = data.data.typeTrack.map(this.th_convert_song);
+      return {
+        result: tracks,
+        total: data.data.total,
+        type: searchType
+      };
+    } catch (err) {
+      return {
+        result: [],
+        total: 0,
+        type: searchType
+      };
+    }
   }
 
-  static th_get_playlist(url) {
-    const list_id = getParameterByName('list_id', url)
-      .split('_')
-      .pop();
-
-    return {
-      success: (fn) => {
-        axiosTH
-          .get('/tracklist/info', {
-            params: {
-              id: list_id
-            }
-          })
-          .then((response) => {
-            const { data } = response.data;
-
-            const info = {
-              cover_img_url: data.pic,
-              title: data.title,
-              id: `thplaylist_${list_id}`,
-              source_url: `https://music.taihe.com/songlist/${list_id}`
-            };
-
-            const total = data.trackCount;
-            const page = Math.ceil(total / 100);
-            const page_array = Array.from({ length: page }, (v, k) => k + 1);
-            async.concat(
-              page_array,
-              (item, callback) => this.th_render_tracks(url, item, callback),
-              (err, tracks) => {
-                fn({
-                  tracks,
-                  info
-                });
-              }
-            );
-          });
+  static async th_get_playlist(url) {
+    const list_id = getParameterByName('list_id', url).split('_').pop();
+    const response = await axiosTH.get('/tracklist/info', {
+      params: {
+        id: list_id
       }
+    });
+
+    const { data } = response.data;
+
+    const info = {
+      cover_img_url: data.pic,
+      title: data.title,
+      id: `thplaylist_${list_id}`,
+      source_url: `https://music.taihe.com/songlist/${list_id}`
     };
+
+    const total = data.trackCount;
+    const page = Math.ceil(total / 100);
+    const page_array = Array.from({ length: page }, (v, k) => k + 1);
+    const tracks = await concat(page_array, (item, callback) => this.th_render_tracks(url, item, callback));
+    return { tracks, info };
   }
 
-  static th_artist(url) {
-    return {
-      success: (fn) => {
-        const artist_id = getParameterByName('list_id', url)
-          .split('_')
-          .pop();
-        axiosTH
-          .get('/artist/info', {
-            params: {
-              artistCode: artist_id
-            }
-          })
-          .then((response) => {
-            const info = {
-              cover_img_url: response.data.data.pic,
-              title: response.data.data.name,
-              id: `thartist_${artist_id}`,
-              source_url: `https://music.taihe.com/artist/${artist_id}`
-            };
-            axiosTH
-              .get('/artist/song', {
-                params: {
-                  artistCode: artist_id,
-                  pageNo: 1,
-                  pageSize: 50
-                }
-              })
-              .then((res) => {
-                const tracks = res.data.data.result.map(this.th_convert_song);
-                return fn({
-                  tracks,
-                  info
-                });
-              });
-          });
+  static async th_artist(url) {
+    const artist_id = getParameterByName('list_id', url).split('_').pop();
+    const response = await axiosTH.get('/artist/info', {
+      params: {
+        artistCode: artist_id
       }
+    });
+    const info = {
+      cover_img_url: response.data.data.pic,
+      title: response.data.data.name,
+      id: `thartist_${artist_id}`,
+      source_url: `https://music.taihe.com/artist/${artist_id}`
+    };
+    const res = await axiosTH.get('/artist/song', {
+      params: {
+        artistCode: artist_id,
+        pageNo: 1,
+        pageSize: 50
+      }
+    });
+    const tracks = res.data.data.result.map(this.th_convert_song);
+    return {
+      tracks,
+      info
     };
   }
 
@@ -211,111 +167,75 @@ export default class taihe {
       });
   }
 
-  static lyric(url) {
-    // eslint-disable-line no-unused-vars
+  static async lyric(url) {
     const lyric_url = getParameterByName('lyric_url', url);
-
-    return {
-      success: (fn) => {
-        if (lyric_url) {
-          axios.get(lyric_url).then((response) =>
-            fn({
-              lyric: response.data
-            })
-          );
-        } else {
-          const track_id = getParameterByName('track_id', url)
-            .split('_')
-            .pop();
-          axiosTH
-            .get('/song/tracklink', {
-              params: {
-                TSID: track_id
-              }
-            })
-            .then((response) => {
-              axios.get(response.data.data.lyric).then((res) =>
-                fn({
-                  lyric: res.data
-                })
-              );
-            });
+    if (lyric_url) {
+      const { data } = await axios.get(lyric_url);
+      return { lyric: data };
+    } else {
+      const track_id = getParameterByName('track_id', url).split('_').pop();
+      const { data } = await axiosTH.get('/song/tracklink', {
+        params: {
+          TSID: track_id
         }
-      }
-    };
+      });
+      const res = await axios.get(data.data.lyric);
+      return { lyric: res.data };
+    }
   }
 
-  static th_album(url) {
+  static async th_album(url) {
+    const album_id = getParameterByName('list_id', url).split('_').pop();
+    const response = await axiosTH.get('/album/info', {
+      params: {
+        albumAssetCode: album_id
+      }
+    });
+
+    const { data } = response.data;
+    const info = {
+      cover_img_url: data.pic,
+      title: data.title,
+      id: `thalbum_${album_id}`,
+      source_url: `https://music.taihe.com/album/${album_id}`
+    };
+
+    const tracks = data.trackList.map((song) => ({
+      id: `thtrack_${song.assetId}`,
+      title: song.title,
+      artist: song.artist ? song.artist[0].name : '',
+      artist_id: song.artist ? `thartist_${song.artist[0].artistCode}` : 'thartist_',
+      album: info.title,
+      album_id: `thalbum_${album_id}`,
+      source: 'taihe',
+      source_url: `https://music.taihe.com/song/${song.assetId}`,
+      img_url: info.cover_img_url,
+      lyric_url: ''
+    }));
     return {
-      success: (fn) => {
-        const album_id = getParameterByName('list_id', url)
-          .split('_')
-          .pop();
-
-        axiosTH
-          .get('/album/info', {
-            params: {
-              albumAssetCode: album_id
-            }
-          })
-          .then((response) => {
-            const { data } = response.data;
-            const info = {
-              cover_img_url: data.pic,
-              title: data.title,
-              id: `thalbum_${album_id}`,
-              source_url: `https://music.taihe.com/album/${album_id}`
-            };
-
-            const tracks = data.trackList.map((song) => ({
-              id: `thtrack_${song.assetId}`,
-              title: song.title,
-              artist: song.artist ? song.artist[0].name : '',
-              artist_id: song.artist ? `thartist_${song.artist[0].artistCode}` : 'thartist_',
-              album: info.title,
-              album_id: `thalbum_${album_id}`,
-              source: 'taihe',
-              source_url: `https://music.taihe.com/song/${song.assetId}`,
-              img_url: info.cover_img_url,
-              lyric_url: ''
-            }));
-            return fn({
-              tracks,
-              info
-            });
-          });
-      }
+      tracks,
+      info
     };
   }
 
-  static show_playlist(url) {
+  static async show_playlist(url) {
     const offset = Number(getParameterByName('offset', url));
     const subCate = getParameterByName('filter_id', url);
-    return {
-      success: (fn) => {
-        axiosTH
-          .get('/tracklist/list', {
-            params: {
-              pageNo: offset / 25 + 1,
-              pageSize: 25,
-              subCateId: subCate
-            }
-          })
-          .then((response) => {
-            const { data } = response.data;
-            const result = data.result.map((item) => ({
-              cover_img_url: item.pic,
-              title: item.title,
-              id: `thplaylist_${item.id}`,
-              source_url: `https://music.taihe.com/songlist/${item.id}`
-            }));
-
-            return fn({
-              result
-            });
-          });
+    const { data } = await axiosTH.get('/tracklist/list', {
+      params: {
+        pageNo: offset / 25 + 1,
+        pageSize: 25,
+        subCateId: subCate
       }
-    };
+    });
+    /** @type {{cover_img_url:string;id:string;source_url:string;title:string}[]}*/
+    const result = data.data.result.map((item) => ({
+      cover_img_url: item.pic,
+      title: item.title,
+      id: `thplaylist_${item.id}`,
+      source_url: `https://music.taihe.com/songlist/${item.id}`
+    }));
+    return result;
   }
 
   static parse_url(url) {
@@ -365,31 +285,22 @@ export default class taihe {
     }
   }
 
-  static get_playlist_filters() {
+  static async get_playlist_filters() {
+    const res = await axiosTH.get('/tracklist/category');
     return {
-      success: (fn) => {
-        axiosTH.get('/tracklist/category').then((res) =>
-          fn({
-            recommend: [{ id: '', name: '推荐歌单' }],
-            all: res.data.data.map((sub) => ({
-              category: sub.categoryName,
-              filters: sub.subCate.map((i) => ({
-                id: i.id,
-                name: i.categoryName
-              }))
-            }))
-          })
-        );
-      }
+      recommend: [{ id: '', name: '推荐歌单' }],
+      all: res.data.data.map((sub) => ({
+        category: sub.categoryName,
+        filters: sub.subCate.map((i) => ({
+          id: i.id,
+          name: i.categoryName
+        }))
+      }))
     };
   }
 
   static get_user() {
-    return {
-      success: (fn) => {
-        fn({ status: 'fail', data: {} });
-      }
-    };
+    return { status: 'fail', data: {} };
   }
 
   static get_login_url() {

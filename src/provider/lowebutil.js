@@ -1,7 +1,4 @@
-/* eslint-disable consistent-return */
-/* eslint-disable no-param-reassign */
-/* eslint-disable no-unused-vars */
-
+import parallel from 'async-es/parallel';
 export function getParameterByName(name, url) {
   if (!url) url = window.location.href;
   name = name.replace(/[\[\]]/g, '\\$&'); // eslint-disable-line no-useless-escape
@@ -14,7 +11,7 @@ export function getParameterByName(name, url) {
 }
 
 export function isElectron() {
-  return window && window.process && window.process.type;
+  return window && window.process && window.process.platform;
 }
 
 export function cookieGet(cookieRequest, callback) {
@@ -30,6 +27,24 @@ export function cookieGet(cookieRequest, callback) {
       [cookie] = cookieArray;
     }
     callback(cookie);
+  });
+}
+export async function cookieGetPromise(cookieRequest) {
+  return new Promise((res, rej) => {
+    if (!isElectron()) {
+      chrome.cookies.get(cookieRequest, (cookie) => {
+        res(cookie);
+      });
+    } else {
+      const remote = require('electron').remote; // eslint-disable-line
+      remote.session.defaultSession.cookies.get(cookieRequest).then((cookieArray) => {
+        let cookie = null;
+        if (cookieArray.length > 0) {
+          [cookie] = cookieArray;
+        }
+        res(cookie);
+      });
+    }
   });
 }
 
@@ -107,4 +122,14 @@ export function smoothScrollTo(element, to, duration) {
     }
   };
   animateScroll();
+}
+
+export function async_process(data_list, handler, handler_extra_param_list) {
+  const fnDict = {};
+  data_list.forEach((item, index) => {
+    fnDict[index] = (cb) => handler(index, item, handler_extra_param_list, cb);
+  });
+  return new Promise((res, rej) => {
+    parallel(fnDict, (err, results) => res(data_list.map((item, index) => results[index])));
+  });
 }

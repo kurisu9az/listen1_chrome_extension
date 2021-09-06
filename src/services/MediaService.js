@@ -1,17 +1,15 @@
-import netease from '@/provider/netease';
+import netease from '../provider/netease';
 // import xiami from "@/provider/xiami";
-import qq from '@/provider/qq';
-import kugou from '@/provider/kugou';
-import kuwo from '@/provider/kuwo';
-import bilibili from '@/provider/bilibili';
-import migu from '@/provider/migu';
-import taihe from '@/provider/taihe';
+import qq from '../provider/qq';
+import kugou from '../provider/kugou';
+import kuwo from '../provider/kuwo';
+import bilibili from '../provider/bilibili';
+import migu from '../provider/migu';
+import taihe from '../provider/taihe';
+import { getLocalStorageValue } from '../provider/lowebutil';
 import customsource from '@/provider/customsource';
 // import localmusic from "@/provider/localmusic";
 // import myplaylist from '@/provider/myplaylist';
-import { getLocalStorageValue } from '@/provider/lowebutil';
-
-import async from 'async';
 
 const sourceList = [
   {
@@ -160,7 +158,6 @@ function queryStringify(options) {
   return new URLSearchParams(query).toString();
 }
 
-// eslint-disable-next-line no-unused-vars
 const MediaService = {
   getSourceList() {
     return sourceList;
@@ -168,38 +165,29 @@ const MediaService = {
   //   getLoginProviders() {
   //     return PROVIDERS.filter((i) => !i.hidden && i.support_login);
   //   },
-  search(source, options) {
+  async search(source, options) {
     const url = `/search?${queryStringify(options)}`;
     if (source === 'allmusic') {
       // search all platform and merge result
-      const callbackArray = getAllSearchProviders().map((p) => (fn) => {
-        p.search(url).success((r) => {
-          fn(null, r);
-        });
-      });
-      return {
-        success: (fn) =>
-          async.parallel(callbackArray, (err, platformResultArray) => {
-            // TODO: nicer pager, playlist support
-            const result = {
-              result: [],
-              total: 1000,
-              type: platformResultArray[0].type
-            };
-            const maxLength = Math.max(...platformResultArray.map((elem) => elem.result.length));
-            for (let i = 0; i < maxLength; i += 1) {
-              platformResultArray.forEach((elem) => {
-                if (i < elem.result.length) {
-                  result.result.push(elem.result[i]);
-                }
-              });
-            }
-            return fn(result);
-          })
+      const platformResultArray = await Promise.all(getAllSearchProviders().map((p) => p.search(url)));
+      const result = {
+        result: [],
+        total: 1000,
+        type: platformResultArray[0].type
       };
+      const maxLength = Math.max(...platformResultArray.map((elem) => elem.result.length));
+      for (let i = 0; i < maxLength; i += 1) {
+        platformResultArray.forEach((elem) => {
+          if (i < elem.result.length) {
+            result.result.push(elem.result[i]);
+          }
+        });
+      }
+      return result;
+    } else {
+      const provider = getProviderByName(source);
+      return provider.search(url);
     }
-    const provider = getProviderByName(source);
-    return provider.search(url);
   },
 
   //   showMyPlaylist() {
@@ -252,15 +240,7 @@ const MediaService = {
     //     success: (fn) => fn(hit),
     //   };
     // }
-    return {
-      success: (fn) =>
-        provider.get_playlist(url).success((playlist) => {
-          // if (provider !== myplaylist && provider !== localmusic) {
-          //   playlistCache.set(listId, playlist);
-          // }
-          fn(playlist);
-        })
-    };
+    return provider.get_playlist(url);
   },
 
   //   clonePlaylist(id, type) {
@@ -393,46 +373,41 @@ const MediaService = {
         return;
       }
       const trackPlatform = getProviderNameByItemId(track.id);
+      /** @type{Array} */
       const failover_source_list = getLocalStorageValue('auto_choose_source_list', ['kuwo', 'qq', 'migu']).filter((i) => i !== trackPlatform);
 
-      const getUrlPromises = failover_source_list.map(
-        (source) =>
-          new Promise((resolve, reject) => {
-            if (track.source === source) {
-              // come from same source, no need to check
-              resolve();
+      const getUrlAsync = failover_source_list.map(async (source) => {
+        if (track.source === source) {
+          return;
+        }
+        const keyword = `${track.title} ${track.artist}`;
+        const curpage = 1;
+        const url = `/search?keywords=${keyword}&curpage=${curpage}&type=0`;
+        const provider = getProviderByName(source);
+        provider.search(url).then((data) => {
+          for (let i = 0; i < data.result.length; i += 1) {
+            const searchTrack = data.result[i];
+            // compare search track and track to check if they are same
+            // TODO: better similar compare method (duration, md5)
+            if (!searchTrack.disable && searchTrack.title === track.title && searchTrack.artist === track.artist) {
+              provider.bootstrap_track(
+                searchTrack,
+                (response) => {
+                  sound.url = response.url;
+                  sound.bitrate = response.bitrate;
+                  sound.platform = response.platform;
+                  Promise.reject(sound); // Use Reject to return immediately
+                },
+                Promise.resolve
+              );
               return;
             }
-            // TODO: better query method
-            const keyword = `${track.title} ${track.artist}`;
-            const curpage = 1;
-            const url = `/search?keywords=${keyword}&curpage=${curpage}&type=0`;
-            const provider = getProviderByName(source);
-            provider.search(url).success((data) => {
-              for (let i = 0; i < data.result.length; i += 1) {
-                const searchTrack = data.result[i];
-                // compare search track and track to check if they are same
-                // TODO: better similar compare method (duration, md5)
-                if (!searchTrack.disable && searchTrack.title === track.title && searchTrack.artist === track.artist) {
-                  provider.bootstrap_track(
-                    searchTrack,
-                    (response) => {
-                      sound.url = response.url;
-                      sound.bitrate = response.bitrate;
-                      sound.platform = response.platform;
-                      reject(sound); // Use Reject to return immediately
-                    },
-                    resolve
-                  );
-                  return;
-                }
-              }
-              resolve(sound);
-            });
-          })
-      );
+          }
+          return sound;
+        });
+      });
       // TODO: Use Promise.any() in ES2021 replace the tricky workaround
-      Promise.all(getUrlPromises)
+      Promise.all(getUrlAsync)
         .then(playerFailCallback)
         .catch((response) => {
           playerSuccessCallback(response);

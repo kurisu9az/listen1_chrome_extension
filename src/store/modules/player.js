@@ -1,7 +1,8 @@
-import MediaService from '@/services/MediaService';
-import { isElectron, smoothScrollTo } from '@/provider/lowebutil';
-import { l1Player } from '@/services/l1_player';
-
+import MediaService from '../../services/MediaService';
+import { isElectron, smoothScrollTo } from '../../provider/lowebutil';
+import { l1Player } from '../../services/l1_player';
+import notyf from '../../services/notyf';
+import I18n from '../../i18n';
 function rightPadding(str, length, padChar) {
   const newstr = str + new Array(length - str.length + 1).join(padChar);
   return newstr;
@@ -135,6 +136,9 @@ export default {
     setIsPlaying(state, newValue) {
       state.isPlaying = newValue;
     },
+    setCurrentDuration(state, newValue) {
+      state.currentDuration = newValue;
+    },
     setCurrentPosition(state, newValue) {
       state.currentPosition = newValue;
     },
@@ -193,17 +197,12 @@ export default {
     },
     playerListener({ commit, state, dispatch }, { mode, msg, sender, sendResponse }) {
       if (typeof msg.type === 'string' && msg.type.split(':')[0] === 'BG_PLAYER') {
-        switch (
-          msg.type
-            .split(':')
-            .slice(1)
-            .join('')
-        ) {
+        switch (msg.type.split(':').slice(1).join('')) {
           case 'READY': {
             break;
           }
           case 'PLAY_FAILED': {
-            notyf.info(i18next.t('_COPYRIGHT_ISSUE'), true);
+            notyf.info(I18n.global.t('_COPYRIGHT_ISSUE'), true);
             break;
           }
 
@@ -266,7 +265,7 @@ export default {
               if (msg.data.duration === 0 || state.currentDuration === durationStr) {
                 return;
               }
-              state.currentDuration = durationStr;
+              commit('setCurrentDuration', durationStr);
             })();
 
             // 'track:progress'
@@ -318,8 +317,7 @@ export default {
             //   lastfm.sendNowPlaying(track.title, track.artist, () => {});
             // }
 
-            MediaService.getLyric(msg.data.id, msg.data.album_id, track.lyric_url, track.tlyric_url).success((res) => {
-              const { lyric, tlyric } = res;
+            MediaService.getLyric(msg.data.id, msg.data.album_id, track.lyric_url, track.tlyric_url).then(({ lyric, tlyric }) => {
               if (!lyric) {
                 return;
               }
@@ -412,11 +410,11 @@ export default {
             break;
           }
           case 'RETRIEVE_URL_FAIL': {
-            state.copyrightNotice();
+            notyf.info(I18n.global.t('_COPYRIGHT_ISSUE'), true);
             break;
           }
           case 'RETRIEVE_URL_FAIL_ALL': {
-            state.failAllNotice();
+            notyf.warning(I18n.global.t('_FAIL_ALL_NOTICE'), true);
             break;
           }
           default:
