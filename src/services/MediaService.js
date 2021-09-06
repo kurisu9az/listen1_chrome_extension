@@ -7,7 +7,7 @@ import bilibili from '../provider/bilibili';
 import migu from '../provider/migu';
 import taihe from '../provider/taihe';
 import { getLocalStorageValue } from '../provider/lowebutil';
-import customsource from '@/provider/customsource';
+import customsource from '../provider/customsource';
 // import localmusic from "@/provider/localmusic";
 // import myplaylist from '@/provider/myplaylist';
 
