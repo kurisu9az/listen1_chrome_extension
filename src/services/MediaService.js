@@ -6,6 +6,7 @@ import kuwo from '@/provider/kuwo';
 import bilibili from '@/provider/bilibili';
 import migu from '@/provider/migu';
 import taihe from '@/provider/taihe';
+import customsource from '@/provider/customsource';
 // import localmusic from "@/provider/localmusic";
 // import myplaylist from '@/provider/myplaylist';
 import { getLocalStorageValue } from '@/provider/lowebutil';
@@ -100,6 +101,13 @@ const PROVIDERS = [
     searchable: true,
     support_login: false,
     id: 'th'
+  },
+  {
+    name: 'customsource',
+    instance: customsource,
+    searchable: false,
+    support_login: false,
+    id: 'cs'
   }
   //   {
   //     name: "localmusic",
