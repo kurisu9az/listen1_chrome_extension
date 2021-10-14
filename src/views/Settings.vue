@@ -7,10 +7,10 @@
           <span>{{ t('_LANGUAGE') }}</span>
         </div>
         <div class="settings-content">
-          <button class="language-button" @click="setLocale('zh-CN')">简体中文</button>
-          <button class="language-button" @click="setLocale('zh-TC')">繁体中文</button>
-          <button class="language-button" @click="setLocale('en-US')">English</button>
-          <button class="language-button" @click="setLocale('fr-FR')">French</button>
+          <button class="setting-button" @click="setLocale('zh-CN')">简体中文</button>
+          <button class="setting-button" @click="setLocale('zh-TC')">繁体中文</button>
+          <button class="setting-button" @click="setLocale('en-US')">English</button>
+          <button class="setting-button" @click="setLocale('fr-FR')">French</button>
         </div>
         <div class="settings-title">
           <span>{{ t('_NOWPLAYING_DISPLAY') }}</span>
@@ -18,21 +18,25 @@
         <div class="settings-content">
           <div class="shortcut">
             <vue-feather
-              v-show="!enableNowplayingCoverBackground"
+              v-show="!settings.enableNowplayingCoverBackground"
               type="square"
               @click="toggleCoverBackground"
             ></vue-feather>
             <vue-feather
-              v-show="enableNowplayingCoverBackground"
+              v-show="settings.enableNowplayingCoverBackground"
               type="check-square"
               @click="toggleCoverBackground"
             ></vue-feather>
             {{ t('_NOWPLAYING_COVER_BACKGROUND_NOTICE') }}
           </div>
           <div class="shortcut">
-            <vue-feather v-show="!enableNowplayingBitrate" type="square" @click="toggleBitrate"></vue-feather>
             <vue-feather
-              v-show="enableNowplayingBitrate"
+              v-show="!settings.enableNowplayingBitrate"
+              type="square"
+              @click="toggleBitrate"
+            ></vue-feather>
+            <vue-feather
+              v-show="settings.enableNowplayingBitrate"
               type="check-square"
               @click="toggleBitrate"
             ></vue-feather>
@@ -40,28 +44,28 @@
           </div>
           <div class="shortcut">
             <vue-feather
-              v-show="!enableNowplayingPlatform"
+              v-show="!settings.enableNowplayingPlatform"
               type="square"
               @click="togglePlayingPlatform"
             ></vue-feather>
             <vue-feather
-              v-show="enableNowplayingPlatform"
+              v-show="settings.enableNowplayingPlatform"
               type="check-square"
               @click="togglePlayingPlatform"
             ></vue-feather>
             {{ t('_NOWPLAYING_PLATFORM_NOTICE') }}
           </div>
         </div>
-        <!-- <div class="settings-title">
-          <span>{{ $t('_THEME') }}</span>
+        <div class="settings-title">
+          <span>{{ t('_THEME') }}</span>
         </div>
         <div class="settings-content">
           <div>
-            <button class="theme-button" ng-click="setTheme('white')">{{ $t('_THEME_WHITE') }}</button>
-            <button class="theme-button" ng-click="setTheme('black')">{{ $t('_THEME_BLACK') }}</button>
+            <button class="setting-button" @click="setTheme('white')">{{ t('_THEME_WHITE') }}</button>
+            <button class="setting-button" @click="setTheme('black')">{{ t('_THEME_BLACK') }}</button>
           </div>
         </div>
-        <div class="settings-title">
+        <!-- <div class="settings-title">
           <span>{{ $t('_AUTO_CHOOSE_SOURCE') }}</span>
         </div>
         <div class="settings-content">
@@ -307,22 +311,19 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { useI18n } from 'vue-i18n';
-import { useStore } from 'vuex';
-import { version } from "../../package.json";
+import { version } from '../../package.json';
 import Href from '../components/Href.vue';
+import useSettings from '../composition/settings';
 import { setLocale } from '../i18n';
-const { t, locale } = useI18n();
-const store = useStore();
-const isChrome = true;
-let enableNowplayingCoverBackground = $computed(() => store.state.settings.enableNowplayingCoverBackground)
-let enableNowplayingBitrate = $computed(() => store.state.settings.enableNowplayingBitrate)
-let enableNowplayingPlatform = $computed(() => store.state.settings.enableNowplayingPlatform)
-const toggleCoverBackground = () => store.dispatch("settings/setState", { enableNowplayingCoverBackground: !enableNowplayingCoverBackground })
-const toggleBitrate = () => store.dispatch("settings/setState", { enableNowplayingBitrate: !enableNowplayingBitrate })
-const togglePlayingPlatform = () => store.dispatch("settings/setState", { enableNowplayingPlatform: !enableNowplayingPlatform })
-</script>
+import { isElectron } from '../provider/lowebutil';
+const { t } = useI18n();
+const { settings, setSettings } = useSettings();
+const isChrome = !isElectron();
 
-<style>
-</style>
+const toggleCoverBackground = () => setSettings({ enableNowplayingCoverBackground: !settings.enableNowplayingCoverBackground });
+const toggleBitrate = () => setSettings({ enableNowplayingBitrate: !settings.enableNowplayingBitrate });
+const togglePlayingPlatform = () => setSettings({ enableNowplayingPlatform: !settings.enableNowplayingPlatform });
+const setTheme = (theme: string) => setSettings({ theme });
+</script>

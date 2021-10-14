@@ -1,6 +1,8 @@
 .DS_Store
 node_modules
 /dist
+/electron_dist
+/desktop_dist
 
 
 # local env files
