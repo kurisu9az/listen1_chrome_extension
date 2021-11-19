@@ -1442,7 +1442,7 @@
                               >
                             </p>
                             <p>{{_DESIGNER}}: iparanoid</p>
-                            <p>{{_VERSION}}: v2.21.5 {{_LICENSE_NOTICE}}</p>
+                            <p>{{_VERSION}}: v2.21.6 {{_LICENSE_NOTICE}}</p>
                             <p ng-show='lastestVersion!=""'>
                               {{_LATEST_VERSION}}: {{lastestVersion}}
                             </p>
@@ -1894,14 +1894,19 @@
                       <div class="total">{{ currentDuration }}</div>
                     </div>
                     <div class="playbar">
-                      <div
-                        class="barbg"
-                        id="progressbar"
-                        mode="play"
-                        draggable-bar=""
-                      >
-                        <div class="cur" ng-style="{width : myProgress + '%' }">
-                          <span class="btn"><i></i></span>
+                      <div class="playbar-clickable">
+                        <div
+                          class="barbg"
+                          id="progressbar"
+                          mode="play"
+                          draggable-bar=""
+                        >
+                          <div
+                            class="cur"
+                            ng-style="{width : myProgress + '%' }"
+                          >
+                            <span class="btn"><i></i></span>
+                          </div>
                         </div>
                       </div>
                     </div>
