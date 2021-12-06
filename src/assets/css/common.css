@@ -4,13 +4,12 @@ body {
   padding: 0;
   font-size: var(--text-default-size);
   color: var(--text-default-color);
-  font-family: system-ui, 'PingFang SC', STHeiti, sans-serif;
+  font-family: -apple-system, 'Helvetica Neue', Helvetica, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', system-ui, sans-serif;
 }
 
 a {
   cursor: pointer;
   text-decoration: none;
-  color: var(--text-default-color);
 }
 
 .wrap {
@@ -219,7 +218,7 @@ svg {
 .sidebar ul li .sidebar-block {
   display: flex;
   align-items: center;
-  line-height: 28px;
+  height: 28px;
   padding-left: 12px;
   margin: 3px 0;
   color: var(--text-default-color);
@@ -320,7 +319,7 @@ https://stackoverflow.com/questions/19889615/can-an-angular-directive-pass-argum
 .navigation .window-control {
   flex: 0 0 105px;
   border-left: solid 1px var(--window-control-border-color);
-  margin-left: 15px;
+  margin: 0 15px;
 }
 
 .navigation .window-control svg {
@@ -428,6 +427,10 @@ https://stackoverflow.com/questions/19889615/can-an-angular-directive-pass-argum
 
 .page .playlist-detail .detail-head .detail-head-title {
   flex: 1;
+}
+
+.page .playlist-detail .detail-head .detail-head-title h2 {
+  height: 33px;
 }
 
 .playlist-button-list {
@@ -726,7 +729,6 @@ https://stackoverflow.com/questions/19889615/can-an-angular-directive-pass-argum
   color: var(--lyric-default-color);
   scrollbar-width: thin;
   scrollbar-color: var(--scroll-color) transparent;
-  font-size: var(--lyric-font-size);
 }
 .page .coverbg .playsong-detail .detail-songinfo .lyric {
   color: var(--lyric-on-cover-color);
@@ -1004,23 +1006,10 @@ ul.detail-songlist li .tools .icon {
 }
 /* page login end */
 
-/* page setting start */
-.page .settings-title {
-  border-bottom: solid 1px var(--line-default-color);
-  padding-bottom: 10px;
-  max-width: 800px;
-  margin: 0 25px;
-  font-size: 17px;
-  margin-bottom: 10px;
-}
-.page .settings-title:first-of-type {
-  margin-top: 20px;
-}
 .page .settings-content {
   margin: 0 25px 25px 25px;
 }
-.page .settings-content label.upload-button,
-.page .settings-content .setting-button {
+.page .settings-content label.upload-button {
   padding: 5px;
   background: var(--button-background-color);
   margin-right: 4px;
@@ -1028,8 +1017,7 @@ ul.detail-songlist li .tools .icon {
   cursor: pointer;
 }
 
-.page .settings-content label.upload-button:hover,
-.page .settings-content .setting-button:hover {
+.page .settings-content label.upload-button:hover {
   background: var(--button-hover-background-color);
 }
 
@@ -1254,13 +1242,15 @@ svg.searchspinner {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  margin: 3px 60px 0 60px;
+  margin: 4px 60px 0 60px;
+  height: 20px;
 }
 
 .footer .main-info .detail .more-info {
   padding: 0 10px;
   display: flex;
   color: var(--text-subtitle-color);
+  height: 17px;
 }
 
 .footer .main-info .detail .more-info .singer {
@@ -1288,11 +1278,11 @@ svg.searchspinner {
 }
 
 .footer .main-info .detail .playbar {
-  width: 100%;
+  margin: 0 10px;
 }
 
 .footer .main-info .detail .playbar .barbg {
-  margin: 8px 10px 0 10px;
+
   height: 3px;
   background: var(--footer-player-bar-background-color);
 }
@@ -1311,7 +1301,9 @@ svg.searchspinner {
   right: -2px;
   top: -5px;
 }
-
+.footer .main-info .detail .playbar .playbar-clickable {
+  cursor: pointer;
+}
 .footer .main-info .detail .playbar .playbar-clickable:hover .barbg .cur .btn {
   width: 10px;
   height: 10px;
@@ -1545,18 +1537,18 @@ svg.searchspinner {
   flex: 1;
 }
 
+.footer .right-control .volume-ctrl .m-pbar .playbar-clickable {
+  width: 140px;
+}
+
 .footer .right-control .volume-ctrl .barbg {
   height: 3px;
-
   background: var(--volume-bar-background-color);
-  margin-top: 7px;
-  width: 140px;
 }
 
 .footer .right-control .volume-ctrl .barbg .cur {
   height: 100%;
   background: var(--volume-bar-current-background-color);
-
   position: relative;
 }
 
@@ -1574,70 +1566,9 @@ svg.searchspinner {
 /* footer end */
 
 /* dialog start */
-.shadow {
-  position: fixed;
-  background: rgba(30, 30, 30, 0.9);
-  _position: absolute;
-  z-index: 9999;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  width: 100%;
-  height: 100%;
-  background-image: url(data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==);
-}
-
-.dialog {
-  position: absolute;
-  top: 120px;
-  width: 400px;
-  height: 430px;
-  z-index: 10000;
-  overflow: hidden;
-  border-radius: 4px;
-  background-color: var(--dialog-background-color);
-  color: var(--dialog-text-color);
-  box-shadow: 0 3px 7px rgba(0, 0, 0, 0.3);
-}
-
-.dialog-header {
-  height: 30px;
-  font-size: 15px;
-  font-weight: bold;
-  text-align: left;
-  padding: 12px;
-}
-
-.dialog-header .dialog-close {
-  float: right;
-  font-size: 26px;
-  cursor: pointer;
-  margin-top: -10px;
-}
-
-.dialog-body {
-  padding: 0 20px;
-  height: 370px;
-  overflow-y: auto;
-  background-color: var(--dialog-background-color);
-}
-
-.dialog-body .buttons {
-  display: flex;
-  justify-content: center;
-  margin-top: 20px;
-}
-
-.dialog-body .buttons .confirm-button {
-  margin-right: 20px;
-}
 .dialog .detail-songlist li:hover {
   background-color: #e3e3e5;
   cursor: pointer;
-}
-.dialog-body input {
-  width: 100%;
 }
 
 .dialog-playlist,

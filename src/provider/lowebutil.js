@@ -1,4 +1,3 @@
-import parallel from 'async-es/parallel';
 export function getParameterByName(name, url) {
   if (!url) url = window.location.href;
   name = name.replace(/[\[\]]/g, '\\$&'); // eslint-disable-line no-useless-escape
@@ -13,7 +12,15 @@ export function getParameterByName(name, url) {
 export function isElectron() {
   return Boolean(window.api?.platform);
 }
-
+export function isMac() {
+  return window.api?.platform === 'darwin';
+}
+export function isLinux() {
+  return window.api?.platform === 'linux';
+}
+export function isWin() {
+  return window.api?.platform === 'win32';
+}
 export function cookieGet(cookieRequest, callback) {
   if (!isElectron()) {
     return chrome.cookies.get(cookieRequest, (cookie) => {
@@ -77,27 +84,6 @@ export function cookieRemove(cookie, callback) {
   callback(null);
 }
 
-// function setPrototypeOfLocalStorage() {
-//   const proto = Object.getPrototypeOf(localStorage);
-//   proto.getObject = function getObject(key) {
-//     const value = this.getItem(key);
-//     return value && JSON.parse(value);
-//   };
-//   proto.setObject = function setObject(key, value) {
-//     this.setItem(key, JSON.stringify(value));
-//   };
-//   Object.setPrototypeOf(localStorage, proto);
-// }
-
-export function getLocalStorageValue(key, defaultValue) {
-  const keyString = localStorage.getItem(key);
-  let result = keyString && JSON.parse(keyString);
-  if (result === null) {
-    result = defaultValue;
-  }
-  return result;
-}
-
 function easeInOutQuad(t, b, c, d) {
   // t = current time
   // b = start value
@@ -131,11 +117,11 @@ export function smoothScrollTo(element, to, duration) {
 }
 
 export function async_process(data_list, handler, handler_extra_param_list) {
-  const fnDict = {};
-  data_list.forEach((item, index) => {
-    fnDict[index] = (cb) => handler(index, item, handler_extra_param_list, cb);
-  });
-  return new Promise((res, rej) => {
-    parallel(fnDict, (err, results) => res(data_list.map((item, index) => results[index])));
-  });
+  return Promise.all(data_list.map((item, index) =>
+    new Promise((res, rej) =>
+      handler(index, item, handler_extra_param_list, (err, data) => {
+        if (err) rej(err);
+        res(data);
+      })))
+  );
 }

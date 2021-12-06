@@ -9,8 +9,32 @@ const schema = {
       maximized: false,
       zoomLevel: 0
     }
+  },
+  floatingWindowBounds: {
+    type: 'object',
+    default: {
+      width: 1000,
+      height: 100
+    }
   }
 };
-
+const isObject = (value) => {
+  return typeof value === 'object' && !Array.isArray(value) && value !== null;
+};
 const store = new Store({ schema });
-module.exports = store;
+const safeGet = (key) => {
+  // TODO: recursive check default value
+  const result = store.get(key);
+  if (isObject(result)) {
+    return { ...schema[key]['default'], ...result };
+  }
+};
+module.exports = {
+  get(key) {
+    return store.get(key);
+  },
+  set(key, value) {
+    store.set(key, value);
+  },
+  safeGet
+};

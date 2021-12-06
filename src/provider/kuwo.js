@@ -1,6 +1,6 @@
-import concat from 'async-es/concat';
 import axios from 'axios';
 import { cookieGet, getParameterByName } from './lowebutil';
+import MusicResource from './music_resource';
 
 const kwConvertSong = (item) => ({
   id: `kwtrack_${item.rid}`,
@@ -35,7 +35,7 @@ function html_decode(str) {
   }
   return text;
 }
-export default class kuwo {
+export default class kuwo extends MusicResource {
   // Fix single quote in json
   static fix_json(data) {
     return data.replace(/(')/g, '"');
@@ -172,8 +172,9 @@ export default class kuwo {
             }
             await axios.get('https://www.kuwo.cn/');
             res(this.getToken(true));
+          } else {
+            res(cookie.value);
           }
-          res(cookie.value);
         }
       );
     });
@@ -209,19 +210,27 @@ export default class kuwo {
   }
   static async getCookie(url) {
     const token = await this.getToken();
-    const response = await axios.get(url, {
-      headers: {
-        csrf: token
-      }
-    });
-    if (response.data.success === false) {
+    const response = await axios
+      .get(url, {
+        headers: {
+          csrf: token
+        }
+      })
+      .catch(() => {
+        return;
+      });
+    if (response !== undefined && response.data.success === false) {
       // token expire, refetch token and start get url
       const token2 = await this.getToken();
-      const res = await axios.get(url, {
-        headers: {
-          csrf: token2
-        }
-      });
+      const res = await axios
+        .get(url, {
+          headers: {
+            csrf: token2
+          }
+        })
+        .catch(() => {
+          return;
+        });
       return res;
     } else {
       return response;
@@ -259,7 +268,7 @@ export default class kuwo {
     });
   }
 
-  static kw_render_tracks(url, page, callback) {
+  static kw_render_tracks(url, page) {
     const list_id = getParameterByName('list_id', url).split('_').pop();
     const playlist_type = getParameterByName('list_id', url).split('_')[0];
     let tracks_url = '';
@@ -276,9 +285,11 @@ export default class kuwo {
         break;
     }
     // axios.get(tracks_url).then((response) => {
-    this.kw_cookie_get(tracks_url, (response) => {
-      const tracks = response.data.data.musicList.map(kwConvertSong);
-      return callback(null, tracks);
+    return new Promise((res) => {
+      this.kw_cookie_get(tracks_url, (response) => {
+        const tracks = response.data.data.musicList.map(kwConvertSong);
+        res(tracks);
+      });
     });
   }
 
@@ -333,7 +344,7 @@ export default class kuwo {
   }
 
   // eslint-disable-next-line no-unused-vars
-  static bootstrap_track(track, success, failure) {
+  static bootstrapTrack(track, success, failure) {
     const sound = {};
     const song_id = track.id.slice('kwtrack_'.length);
     const target_url = 'https://antiserver.kuwo.cn/anti.s?' + `type=convert_url&format=mp3&response=url&rid=${song_id}`;
@@ -341,17 +352,20 @@ export default class kuwo {
       + `format=mp3&rid=${song_id}&response=url&type=convert_url3&br=128kmp3&from=web`;
     https://m.kuwo.cn/newh5app/api/mobile/v1/music/src/${song_id} */
 
-    axios.get(target_url).then((response) => {
-      const { data } = response;
-      if (data.length > 0) {
-        sound.url = data;
-        sound.platform = 'kuwo';
+    axios
+      .get(target_url)
+      .then((response) => {
+        const { data } = response;
+        if (data.length > 0) {
+          sound.url = data;
+          sound.platform = 'kuwo';
 
-        success(sound);
-      } else {
-        failure(sound);
-      }
-    });
+          success(sound);
+        } else {
+          failure(sound);
+        }
+      })
+      .catch(() => failure(sound));
   }
 
   static kw_get_lrc(arr) {
@@ -491,7 +505,7 @@ export default class kuwo {
     const total = data.songnum;
     const page = Math.ceil(total / 100);
     const page_array = Array.from({ length: page }, (v, k) => k + 1);
-    const tracks = await concat(page_array, (item, callback) => this.kw_render_tracks(url, item, callback));
+    const tracks = (await Promise.all(page_array.map((page) => this.kw_render_tracks(url, page)))).flat();
     return {
       tracks,
       info
@@ -505,7 +519,7 @@ export default class kuwo {
           */
   }
 
-  static async show_playlist(url) {
+  static async showPlaylist(url) {
     const offset = Number(getParameterByName('offset', url));
 
     /* const id_available = {
@@ -598,7 +612,7 @@ export default class kuwo {
     const { total } = data;
     const page = Math.ceil(total / 100);
     const page_array = Array.from({ length: page }, (v, k) => k + 1);
-    const tracks = await concat(page_array, (item, callback) => this.kw_render_tracks(url, item, callback));
+    const tracks = (await Promise.all(page_array.map((page) => this.kw_render_tracks(url, page)))).flat();
     return { tracks, info };
 
     /*
@@ -610,7 +624,7 @@ export default class kuwo {
           */
   }
 
-  static parse_url(myurl) {
+  static async parseUrl(myurl) {
     let result;
     let id;
     let url = myurl;
@@ -643,14 +657,10 @@ export default class kuwo {
         };
       }
     }
-    return {
-      success: (fn) => {
-        fn(result);
-      }
-    };
+    return result;
   }
 
-  static get_playlist(url) {
+  static getPlaylist(url) {
     const list_id = getParameterByName('list_id', url).split('_')[0];
     switch (list_id) {
       case 'kwplaylist':
@@ -664,33 +674,22 @@ export default class kuwo {
     }
   }
 
-  static async get_playlist_filters() {
+  static async getPlaylistFilters() {
     return {
       recommend: [],
       all: []
     };
   }
 
-  static async get_user() {
+  static async getUser() {
     return { status: 'fail', data: {} };
   }
 
-  static get_login_url() {
+  static getLoginUrl() {
     return `https://www.kuwo.com`;
   }
 
-  static logout() {}
-
-  // return {
-  //   show_playlist: kw_show_playlist,
-  //   get_playlist_filters,
-  //   get_playlist,
-  //   parse_url: kw_parse_url,
-  //   bootstrap_track: kw_bootstrap_track,
-  //   search: kw_search,
-  //   lyric: kw_lyric,
-  //   get_user: kw_get_user,
-  //   get_login_url: kw_get_login_url,
-  //   logout: kw_logout,
-  // };
+  static logout() {
+    // empty block
+  }
 }

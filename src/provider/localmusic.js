@@ -1,71 +1,54 @@
 import { getParameterByName } from './lowebutil';
+import MusicResource from './music_resource';
+import iDB from '../services/DBService';
 
-/* global getParameterByName */
-
-const defaultLocalMusicPlaylist = {
-  tracks: [],
-  info: {
-    id: 'lmplaylist_reserve',
-    cover_img_url: 'images/mycover.jpg',
-    title: '本地音乐',
-    source_url: ''
-  }
-};
-
-export default class localmusic {
-  static show_playlist(url, hm) {
-    return {
-      success: (fn) =>
-        fn({
-          result: []
-        })
+export default class localmusic extends MusicResource {
+  static async getPlaylistById(list_id) {
+    const playlistInfo = await iDB.Playlists.get(list_id);
+    let playlist = {
+      info: playlistInfo,
+      tracks: []
     };
-  }
-
-  static async lm_get_playlist(url) {
-    const list_id = getParameterByName('list_id', url);
-
-    let playlist = localStorage.getObject(list_id);
-
-    if (playlist === null || playlist === undefined) {
-      playlist = defaultLocalMusicPlaylist;
+    // clear url field when load old playlist
+    if (playlistInfo) {
+      playlist.tracks = await iDB.Tracks.where('playlist')
+        .equals(list_id)
+        .toArray()
+        .then((tracks) => (playlistInfo.order ? playlistInfo.order.map((id) => tracks.find((track) => track.id === id)) : tracks));
+    } else {
+      playlist = null;
     }
     return playlist;
+  }
+  static async lm_get_playlist(url) {
+    const list_id = getParameterByName('list_id', url);
+    return await this.getPlaylistById(list_id);
   }
 
   static async lm_album(url) {
     const album = getParameterByName('list_id', url).split('_').pop();
 
     const list_id = 'lmplaylist_reserve';
-    let playlist = localStorage.getObject(list_id);
+    const playlist = await this.getPlaylistById(list_id);
 
-    if (playlist === null || playlist === undefined) {
-      playlist = JSON.parse(JSON.stringify(defaultLocalMusicPlaylist));
-      playlist.info.title = album;
-    } else {
-      playlist.info.title = album;
-      playlist.tracks = playlist.tracks.filter((tr) => tr.album === album);
-    }
+    playlist.info.title = album;
+    playlist.tracks = playlist.tracks.filter((tr) => tr.album === album);
+
     return playlist;
   }
 
   static async lm_artist(url) {
     const artist = getParameterByName('list_id', url).split('_').pop();
-
     const list_id = 'lmplaylist_reserve';
-    let playlist = localStorage.getObject(list_id);
+    const playlist = await this.getPlaylistById(list_id);
 
-    if (playlist === null || playlist === undefined) {
-      playlist = JSON.parse(JSON.stringify(defaultLocalMusicPlaylist));
-      playlist.info.title = artist;
-    } else {
-      playlist.info.title = artist;
-      playlist.tracks = playlist.tracks.filter((tr) => tr.artist === artist);
-    }
+    playlist.info.title = artist;
+    playlist.tracks = playlist.tracks.filter((tr) => tr.artist === artist);
+
     return playlist;
   }
 
-  static bootstrap_track(track, success, failure) {
+  static bootstrapTrack(track, success, failure) {
     const sound = {};
     sound.url = track.sound_url;
     sound.platform = 'localmusic';
@@ -83,42 +66,27 @@ export default class localmusic {
   }
 
   static async lyric(url) {
+    const track_id = getParameterByName('track_id', url);
+    const list_id = 'lmplaylist_reserve';
+    const playlist = await this.getPlaylistById(list_id);
+
+    const track = playlist.tracks.find((item) => item.id === track_id);
+    let lyric = '';
+    if (track.lyrics !== undefined) {
+      [lyric] = track.lyrics;
+    }
     return {
-      lyric: '',
+      lyric,
       tlyric: ''
     };
   }
 
-  static add_playlist(list_id, tracks) {
-    if (typeof tracks === 'string') {
-      tracks = JSON.parse(tracks);
-    }
-    let playlist = localStorage.getObject(list_id);
-    if (playlist === null) {
-      playlist = JSON.parse(JSON.stringify(defaultLocalMusicPlaylist));
-    }
-    const tracksIdSet = {};
-    tracks.forEach((tr) => {
-      tracksIdSet[tr.id] = true;
-    });
-    playlist.tracks = tracks.concat(playlist.tracks.filter((tr) => tracksIdSet[tr.id] !== true));
-    localStorage.setObject(list_id, playlist);
-
-    return {
-      success: (fn) => fn({ list_id, playlist })
-    };
-  }
-
-  static parse_url(url) {
+  static async parseUrl(url) {
     let result;
-    return {
-      success: (fn) => {
-        fn(result);
-      }
-    };
+    return result;
   }
 
-  static get_playlist(url) {
+  static getPlaylist(url) {
     const list_id = getParameterByName('list_id', url).split('_')[0];
     switch (list_id) {
       case 'lmplaylist':
@@ -132,37 +100,10 @@ export default class localmusic {
     }
   }
 
-  static remove_from_playlist(list_id, track_id) {
-    const playlist = localStorage.getObject(list_id);
-    if (playlist == null) {
-      return;
-    }
-    const newtracks = playlist.tracks.filter((item) => item.id !== track_id);
-    playlist.tracks = newtracks;
-    localStorage.setObject(list_id, playlist);
-
-    // eslint-disable-next-line consistent-return
-    return {
-      success: (fn) => fn()
-    };
-  }
-
-  static async get_playlist_filters() {
+  static async getPlaylistFilters() {
     return {
       recommend: [],
       all: []
     };
   }
-
-  // return {
-  //   show_playlist: lm_show_playlist,
-  //   get_playlist_filters,
-  //   get_playlist,
-  //   parse_url: lm_parse_url,
-  //   bootstrap_track: lm_bootstrap_track,
-  //   search: lm_search,
-  //   lyric: lm_lyric,
-  //   add_playlist: lm_add_playlist,
-  //   remove_from_playlist: lm_remove_from_playlist,
-  // };
 }

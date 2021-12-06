@@ -85,10 +85,9 @@
             </li>
             <template v-if="condition.searchType === 0">
               <li
-                v-for="song in result.tracks"
+                v-for="(song,index) in result.tracks"
                 :key="song.id"
-                ng-class-odd="'odd'"
-                ng-class-even="'even'"
+                :class="{'even': index % 2 === 0, 'odd': index % 2 !== 0 }"
                 @mouseenter="song.options = true"
                 @mouseleave="song.options = undefined"
               >
@@ -107,8 +106,8 @@
                 </div>
 
                 <div class="tools">
-                  <a v-show="song.options" title="_ADD_TO_QUEUE" class="detail-add-button" add-without-play="song"><span class="icon li-add" /></a>
-                  <a v-show="song.options" title="_ADD_TO_PLAYLIST" class="detail-fav-button" ng-click="showDialog(0, song)">
+                  <a v-show="song.options" :title="t('_ADD_TO_QUEUE')" class="detail-add-button" add-without-play="song"><span class="icon li-add" /></a>
+                  <a v-show="song.options" :title="t('_ADD_TO_PLAYLIST')" class="detail-fav-button" @click="showModal('AddToPlaylist', { tracks: [song] })">
                     <span class="icon li-songlist" />
                   </a>
                   <a
@@ -119,7 +118,7 @@
                   >
                     <span class="icon li-del" />
                   </a>
-                  <a v-show="options" title="_ORIGIN_LINK" class="source-button" open-url="song.source_url"><span class="icon li-link" /></a>
+                  <a v-show="song.options" :title="t('_ORIGIN_LINK')" class="source-button" @click="openUrl(song.source_url)"><span class="icon li-link" /></a>
                 </div>
               </li>
             </template>
@@ -151,11 +150,13 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, inject, toRaw } from 'vue';
 import { useI18n } from 'vue-i18n';
 import useSearch from '../composition/search';
 import { l1Player } from '../services/l1_player';
 import MediaService from '../services/MediaService';
+
+const showModal = inject('showModal');
 
 const { t } = useI18n();
 const { condition, result } = useSearch();
@@ -172,8 +173,11 @@ const changeSearchPage = (offset) => {
   condition.curpage += offset;
 };
 const play = (song) => {
-  l1Player.addTrack(song);
+  l1Player.addTrack(toRaw(song));
   l1Player.playById(song.id);
+};
+const openUrl = (url) => {
+  window.open(url, '_blank').focus();
 };
 const sourceList = computed(() => MediaService.getSourceList());
 </script>

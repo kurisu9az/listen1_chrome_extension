@@ -1,5 +1,5 @@
 /// <reference types="vite/client" />
-/// <reference types="vue/ref-macros" />
+/// <reference types="../node_modules/vue/ref-macros" />
 
 declare module '*.vue' {
   import { DefineComponent } from 'vue';
@@ -18,9 +18,16 @@ declare module 'global' {
         getCookie: (request: CookiesGetFilter) => Promise<Cookie[]>;
         setCookie: (cookie: Cookie) => Promise<void>;
         removeCookie: (url: string, name: string) => void;
+        sendLyric: (params: any) => void;
+        sendTrackPlayingNow: (params: any) => void;
+
         session: Session;
         ipcRenderer: IpcRenderer;
         platform: NodeJS.Platform;
+        sendControl: any;
+        onLyricWindow: any;
+        ipcOn: any;
+        ipcOnce: any;
       };
     }
   }

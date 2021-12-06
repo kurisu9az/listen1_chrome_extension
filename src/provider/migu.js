@@ -1,9 +1,10 @@
 import axios from 'axios';
-import concat from 'async-es/concat';
 import forge from 'node-forge';
-import { getParameterByName, cookieRemove } from './lowebutil';
+import { getParameterByName } from './lowebutil';
+import MusicResource from './music_resource';
+import { cookieRemove } from './lowebutil';
 
-export default class migu {
+export default class migu extends MusicResource {
   static mg_convert_song(song) {
     return {
       id: `mgtrack_${song.copyrightId}`,
@@ -24,7 +25,7 @@ export default class migu {
     };
   }
 
-  static mg_render_tracks(url, page, callback) {
+  static async mg_render_tracks(url, page) {
     const list_id = getParameterByName('list_id', url).split('_').pop();
     const playlist_type = getParameterByName('list_id', url).split('_')[0];
     let tracks_url = '';
@@ -38,11 +39,10 @@ export default class migu {
       default:
         break;
     }
-    axios.get(tracks_url).then((response) => {
-      const data = playlist_type === 'mgplaylist' ? response.data.list : response.data.songList;
-      const tracks = data.map((item) => this.mg_convert_song(item));
-      return callback(null, tracks);
-    });
+    const response = await axios.get(tracks_url);
+    const data = playlist_type === 'mgplaylist' ? response.data.list : response.data.songList;
+    const tracks = data.map((item) => this.mg_convert_song(item));
+    return tracks;
   }
 
   static async mg_show_toplist(offset) {
@@ -102,7 +102,7 @@ export default class migu {
     return result;
   }
 
-  static async show_playlist(url) {
+  static async showPlaylist(url) {
     const offset = Number(getParameterByName('offset', url));
     const filterId = getParameterByName('filter_id', url);
     if (filterId === 'toplist') {
@@ -345,7 +345,7 @@ export default class migu {
     const total = response.data.resource[0].musicNum;
     const page = Math.ceil(total / 50);
     const page_array = Array.from({ length: page }, (v, k) => k + 1);
-    const tracks = await concat(page_array, (item, callback) => this.mg_render_tracks(url, item, callback));
+    const tracks = (await Promise.all(page_array.map((page) => this.mg_render_tracks(url, page)))).flat();
     return { tracks, info };
   }
 
@@ -364,7 +364,7 @@ export default class migu {
     const total = data.resource[0].totalCount;
     const page = Math.ceil(total / 50);
     const page_array = Array.from({ length: page }, (v, k) => k + 1);
-    const tracks = await concat(page_array, (item, callback) => this.mg_render_tracks(url, item, callback));
+    const tracks = (await Promise.all(page_array.map((page) => this.mg_render_tracks(url, page)))).flat();
     return {
       tracks,
       info
@@ -393,7 +393,7 @@ export default class migu {
     };
   }
 
-  static bootstrap_track(track, success, failure) {
+  static bootstrapTrack(track, success, failure) {
     const sound = {};
     const songId = track.song_id;
     /*
@@ -497,7 +497,8 @@ export default class migu {
         } else {
           failure(sound);
         }
-      });
+      })
+      .catch(() => failure(sound));
   }
 
   static async search(url) {
@@ -678,7 +679,7 @@ export default class migu {
     };
   }
 
-  static parse_url(url) {
+  static async parseUrl(url) {
     let result;
     // eslint-disable-next-line no-param-reassign
     url = url.replace('music.migu.cn/v3/my/playlist/', 'music.migu.cn/v3/music/playlist/');
@@ -690,14 +691,10 @@ export default class migu {
         id: `mgplaylist_${regex_result[1]}`
       };
     }
-    return {
-      success: (fn) => {
-        fn(result);
-      }
-    };
+    return result;
   }
 
-  static get_playlist(url) {
+  static getPlaylist(url) {
     const list_id = getParameterByName('list_id', url).split('_')[0];
     switch (list_id) {
       case 'mgplaylist':
@@ -713,7 +710,7 @@ export default class migu {
     }
   }
 
-  static async get_playlist_filters() {
+  static async getPlaylistFilters() {
     let target_url = 'https://app.c.nf.migu.cn/MIGUM3.0/v1.0/template/musiclistplaza-hottaglist/release';
     const response = await axios.get(target_url);
     const recommend = response.data.data.contentItemList.map((item) => ({
@@ -737,7 +734,7 @@ export default class migu {
     };
   }
 
-  static async get_user() {
+  static async getUser() {
     const ts = +new Date();
     const url = `https://music.migu.cn/v3/api/user/getUserInfo?_=${ts}`;
     const res = await axios.get(url);
@@ -752,7 +749,7 @@ export default class migu {
         user_id: data.user.uid,
         user_name: data.user.mobile,
         nickname: data.user.nickname,
-        avatar: data.user.avatar.midAvatar,
+        avatar: 'https:' + data.user.avatar.smallAvatar,
         platform: 'migu',
         data
       };
@@ -764,7 +761,7 @@ export default class migu {
     };
   }
 
-  static get_login_url() {
+  static getLoginUrl() {
     return `https://music.migu.cn`;
   }
 
@@ -794,17 +791,4 @@ export default class migu {
     musicCookieList.map((name) => removeFn('https://music.migu.cn', name));
     passportCookieList.map((name) => removeFn('https://passport.migu.cn', name));
   }
-
-  // return {
-  //   show_playlist: mg_show_playlist,
-  //   get_playlist_filters,
-  //   get_playlist,
-  //   parse_url: mg_parse_url,
-  //   bootstrap_track: mg_bootstrap_track,
-  //   search: mg_search,
-  //   lyric: mg_lyric,
-  //   get_user: migu_get_user,
-  //   get_login_url: migu_get_login_url,
-  //   logout: mg_logout,
-  // };
 }

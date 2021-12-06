@@ -1,7 +1,8 @@
 import axios from 'axios';
 import { getParameterByName, cookieRemove, cookieGetPromise } from './lowebutil';
+import MusicResource from './music_resource';
 
-export default class qq {
+export default class qq extends MusicResource {
   static htmlDecode(value) {
     const parser = new DOMParser();
     return parser.parseFromString(value, 'text/html').body.textContent;
@@ -25,7 +26,7 @@ export default class qq {
     return result;
   }
 
-  static async show_playlist(url) {
+  static async showPlaylist(url) {
     const offset = Number(getParameterByName('offset', url)) || 0;
     let filterId = getParameterByName('filter_id', url) || '';
     if (filterId === 'toplist') {
@@ -309,7 +310,7 @@ export default class qq {
     return result;
   }
 
-  static bootstrap_track(track, success, failure) {
+  static bootstrapTrack(track, success, failure) {
     const sound = {};
     const songId = track.id.slice('qqtrack_'.length);
     const target_url = 'https://u.y.qq.com/cgi-bin/musicu.fcg';
@@ -375,24 +376,27 @@ export default class qq {
       format: 'json',
       data: JSON.stringify(reqData)
     };
-    axios.get(target_url, { params }).then((response) => {
-      const { data } = response;
-      const { purl } = data.req_0.data.midurlinfo[0];
+    axios
+      .get(target_url, { params })
+      .then((response) => {
+        const { data } = response;
+        const { purl } = data.req_0.data.midurlinfo[0];
 
-      if (purl === '') {
-        // vip
-        failure(sound);
-        return;
-      }
-      const url = data.req_0.data.sip[0] + purl;
-      sound.url = url;
-      const prefix = purl.slice(0, 4);
-      const found = Object.values(fileConfig).filter((i) => i.s === prefix);
-      sound.bitrate = found.length > 0 ? found[0].bitrate : '';
-      sound.platform = 'qq';
+        if (purl === '') {
+          // vip
+          failure(sound);
+          return;
+        }
+        const url = data.req_0.data.sip[0] + purl;
+        sound.url = url;
+        const prefix = purl.slice(0, 4);
+        const found = Object.values(fileConfig).filter((i) => i.s === prefix);
+        sound.bitrate = found.length > 0 ? found[0].bitrate : '';
+        sound.platform = 'qq';
 
-      success(sound);
-    });
+        success(sound);
+      })
+      .catch(() => failure(sound));
   }
 
   // eslint-disable-next-line no-unused-vars
@@ -417,58 +421,44 @@ export default class qq {
     return { lyric, tlyric };
   }
 
-  static parse_url(url) {
-    return {
-      success: (fn) => {
-        let result;
+  static async parseUrl(url) {
+    let result;
 
-        let match = /\/\/y.qq.com\/n\/yqq\/playlist\/([0-9]+)/.exec(url);
-        if (match != null) {
-          const playlist_id = match[1];
-          result = {
-            type: 'playlist',
-            id: `qqplaylist_${playlist_id}`
-          };
-        }
-        match = /\/\/y.qq.com\/n\/yqq\/playsquare\/([0-9]+)/.exec(url);
-        if (match != null) {
-          const playlist_id = match[1];
-          result = {
-            type: 'playlist',
-            id: `qqplaylist_${playlist_id}`
-          };
-        }
-        match = /\/\/y.qq.com\/n\/m\/detail\/taoge\/index.html\?id=([0-9]+)/.exec(url);
-        if (match != null) {
-          const playlist_id = match[1];
-          result = {
-            type: 'playlist',
-            id: `qqplaylist_${playlist_id}`
-          };
-        }
-
-        // c.y.qq.com/base/fcgi-bin/u?__=1MsbSLu
-        match = /\/\/c.y.qq.com\/base\/fcgi-bin\/u\?__=([0-9a-zA-Z]+)/.exec(url);
-        if (match != null) {
-          return axios
-            .get(url)
-            .then((response) => {
-              const { responseURL } = response.request;
-              const playlist_id = getParameterByName('id', responseURL);
-              result = {
-                type: 'playlist',
-                id: `qqplaylist_${playlist_id}`
-              };
-              return fn(result);
-            })
-            .catch(() => fn(undefined));
-        }
-        return fn(result);
+    const matchList = [
+      /\/\/y.qq.com\/n\/yqq\/playlist\/([0-9]+)/,
+      /\/\/y.qq.com\/n\/ryqq\/playlist\/([0-9]+)/,
+      /\/\/y.qq.com\/n\/yqq\/playsquare\/([0-9]+)/,
+      /\/\/y.qq.com\/n\/m\/detail\/taoge\/index.html\?id=([0-9]+)/
+    ];
+    matchList.forEach((reg) => {
+      const match = reg.exec(url);
+      if (match != null) {
+        const playlist_id = match[1];
+        result = {
+          type: 'playlist',
+          id: `qqplaylist_${playlist_id}`
+        };
+        return result;
       }
-    };
+    });
+
+    // https://c.y.qq.com/base/fcgi-bin/u?__=1MsbSLu
+    let match = /\/\/c.y.qq.com\/base\/fcgi-bin\/u\?__=([0-9a-zA-Z]+)/.exec(url);
+    if (match != null) {
+      const response = await axios.get(url);
+
+      const { responseURL } = response.request;
+      const playlist_id = getParameterByName('id', responseURL);
+      result = {
+        type: 'playlist',
+        id: `qqplaylist_${playlist_id}`
+      };
+      return result;
+    }
+    return result;
   }
 
-  static get_playlist(url) {
+  static getPlaylist(url) {
     const list_id = getParameterByName('list_id', url).split('_')[0];
     switch (list_id) {
       case 'qqplaylist':
@@ -484,7 +474,7 @@ export default class qq {
     }
   }
 
-  static async get_playlist_filters() {
+  static async getPlaylistFilters() {
     const target_url =
       'https://c.y.qq.com/splcloud/fcgi-bin/fcg_get_diss_tag_conf.fcg' +
       `?picmid=1&rnd=${Math.random()}&g_tk=732560869` +
@@ -540,7 +530,7 @@ export default class qq {
     return { status: 'success', data: result };
   }
 
-  static async get_user_created_playlist(url) {
+  static async getUserCreatedPlaylist(url) {
     const user_id = getParameterByName('user_id', url);
     // TODO: load more than size
     const size = 100;
@@ -581,7 +571,7 @@ export default class qq {
     };
   }
 
-  static async get_user_favorite_playlist(url) {
+  static async getUserFavoritePlaylist(url) {
     const user_id = getParameterByName('user_id', url);
     // TODO: load more than size
     const size = 100;
@@ -619,7 +609,7 @@ export default class qq {
     };
   }
 
-  static async get_recommend_playlist() {
+  static async getRecommendPlaylist() {
     const target_url = `https://u.y.qq.com/cgi-bin/musicu.fcg?format=json&&loginUin=0&hostUin=0inCharset=utf8&outCharset=utf-8&platform=yqq.json&needNewCode=0&data=${encodeURIComponent(
       JSON.stringify({
         comm: {
@@ -653,7 +643,7 @@ export default class qq {
       }
     };
   }
-  static async get_user() {
+  static async getUser() {
     const domain = 'https://y.qq.com';
     const qqCookie = await cookieGetPromise({
       url: domain,
@@ -669,11 +659,11 @@ export default class qq {
       }
       let { value: uin } = wxCookie;
       uin = `1${uin.slice('o'.length)}`; // replace prefix o with 1
-      return this.get_user_by_uin(uin, fn);
+      return this.get_user_by_uin(uin);
     }
   }
 
-  static get_login_url() {
+  static getLoginUrl() {
     return `https://y.qq.com/portal/profile.html`;
   }
 
@@ -689,7 +679,9 @@ export default class qq {
             url: 'https://y.qq.com',
             name: 'wxuin'
           },
-          () => {}
+          () => {
+            // empty block
+          }
         );
       }
     );

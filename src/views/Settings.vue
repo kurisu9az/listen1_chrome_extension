@@ -3,18 +3,14 @@
   <div class="page" ng-init="lastfm.updateStatus(); updateGithubStatus();">
     <div class="site-wrapper-innerd">
       <div class="cover-container">
-        <div class="settings-title">
-          <span>{{ t('_LANGUAGE') }}</span>
-        </div>
+        <SettingTitle :text="t('_LANGUAGE')" />
         <div class="settings-content">
-          <button class="setting-button" @click="setLocale('zh-CN')">简体中文</button>
-          <button class="setting-button" @click="setLocale('zh-TC')">繁体中文</button>
-          <button class="setting-button" @click="setLocale('en-US')">English</button>
-          <button class="setting-button" @click="setLocale('fr-FR')">French</button>
+          <SettingButton text="简体中文" @click="setLocale('zh-CN')" />
+          <SettingButton text="繁体中文" @click="setLocale('zh-TC')" />
+          <SettingButton text="English" @click="setLocale('en-US')" />
+          <SettingButton text="French" @click="setLocale('fr-FR')" />
         </div>
-        <div class="settings-title">
-          <span>{{ t('_NOWPLAYING_DISPLAY') }}</span>
-        </div>
+        <SettingTitle :text="t('_NOWPLAYING_DISPLAY')" />
         <div class="settings-content">
           <div class="shortcut">
             <vue-feather
@@ -56,34 +52,55 @@
             {{ t('_NOWPLAYING_PLATFORM_NOTICE') }}
           </div>
         </div>
-        <div class="settings-title">
-          <span>{{ t('_THEME') }}</span>
-        </div>
+        <SettingTitle :text="t('_THEME')" />
         <div class="settings-content">
-          <div>
-            <button class="setting-button" @click="setTheme('white')">{{ t('_THEME_WHITE') }}</button>
-            <button class="setting-button" @click="setTheme('black')">{{ t('_THEME_BLACK') }}</button>
+          <SettingButton :text="t('_THEME_WHITE')" @click="setTheme('white')" />
+          <SettingButton :text="t('_THEME_BLACK')" @click="setTheme('black')" />
+        </div>
+        <SettingTitle :text="t('_STYLE')" />
+        <div class="settings-content">
+          <p>
+            {{ `${t('_LYRIC_SIZE')}` }}
+            <input
+              class="settings-input"
+              v-model.lazy="settings.lyricFontSize"
+              type="number"
+              min="10"
+              max="40"
+              :style="{
+                width: `${`${settings.lyricFontSize}`.length + 3}ch`
+              }" />
+            px
+          </p>
+          <p>
+            {{ `${t('_LYRIC_WEIGHT')}` }}
+            <select class="settings-input" v-model="settings.lyricFontWeight">
+              <option v-for="option in fontWeightOptions" :value="option.value" :key="option.text">
+                {{ option.text }}
+              </option>
+            </select>
+          </p>
+          <div class="setting-font-preview">
+            <p :style="{ fontWeight: settings.lyricFontWeight, fontSize: `${settings.lyricFontSize}px` }">Listen1，自由的享受音乐的乐趣</p>
           </div>
         </div>
-        <!-- <div class="settings-title">
-          <span>{{ $t('_AUTO_CHOOSE_SOURCE') }}</span>
-        </div>
+        <SettingTitle :text="t('_AUTO_CHOOSE_SOURCE')" />
         <div class="settings-content">
           <div class="shortcut btn btn-primary confirm-button">
-            <vue-feather v-show="!enableAutoChooseSource" type="square" ng-click="setAutoChooseSource(true)"></vue-feather>
-            <vue-feather v-show="enableAutoChooseSource" type="check-square" ng-click="setAutoChooseSource(true)"></vue-feather>
-            {{ $t('_AUTO_CHOOSE_SOURCE_NOTICE') }}
+            <vue-feather v-show="!settings.enableAutoChooseSource" type="square" @click="setAutoChooseSource(true)"></vue-feather>
+            <vue-feather v-show="settings.enableAutoChooseSource" type="check-square" @click="setAutoChooseSource(false)"></vue-feather>
+            {{ t('_AUTO_CHOOSE_SOURCE_NOTICE') }}
           </div>
-          <div v-show="enableAutoChooseSource" class="search-description">{{ $t('_AUTO_CHOOSE_SOURCE_LIST') }}</div>
-          <div v-show="enableAutoChooseSource" class="search-source-list">
-            <div ng-repeat="item in sourceList" class="search-source">
-              <vue-feather type="square" ng-show="autoChooseSourceList.indexOf(item.name) === -1" ng-click="enableSource(item.name)"></vue-feather>
-              <vue-feather type="check-square" ng-show="autoChooseSourceList.indexOf(item.name) > -1" ng-click="disableSource(item.name)"></vue-feather>
-              item.displayText
+          <div v-show="settings.enableAutoChooseSource" class="search-description">{{ t('_AUTO_CHOOSE_SOURCE_LIST') }}</div>
+          <div v-show="settings.enableAutoChooseSource" class="search-source-list">
+            <div v-for="item in sourceList" :key="item.name" class="search-source">
+              <vue-feather type="square" v-show="settings.autoChooseSourceList.indexOf(item.name) === -1" @click="enableSource(item.name)"></vue-feather>
+              <vue-feather type="check-square" v-show="settings.autoChooseSourceList.indexOf(item.name) > -1" @click="disableSource(item.name)"></vue-feather>
+              {{ t(item.displayId) }}
             </div>
           </div>
         </div>
-        <div ng-if="isChrome" class="settings-title">
+        <!-- <div ng-if="isChrome" class="settings-title">
           <span>{{ $t('_CLOSE_TAB_ACTION') }}({{ $t('_VALID_AFTER_RESTART') }})</span>
         </div>
         <div ng-if="isChrome" class="settings-content">
@@ -284,9 +301,7 @@
           <span v-show="proxyMode_name == 'custom'">proxyRules</span>
           <button ng-click="showDialog(12)">{{ $t('_MODIFY') }}</button>
         </div>-->
-        <div class="settings-title">
-          <span>{{ t('_ABOUT') }}</span>
-        </div>
+        <SettingTitle :text="t('_ABOUT')" />
         <div class="settings-content">
           <p>
             Listen 1 {{ t('_HOMEPAGE') }}:
@@ -318,6 +333,8 @@ import Href from '../components/Href.vue';
 import useSettings from '../composition/settings';
 import { setLocale } from '../i18n';
 import { isElectron } from '../provider/lowebutil';
+import SettingButton from '../components/SettingButton.vue';
+import SettingTitle from '../components/SettingTitle.vue';
 const { t } = useI18n();
 const { settings, setSettings } = useSettings();
 const isChrome = !isElectron();
@@ -326,4 +343,107 @@ const toggleCoverBackground = () => setSettings({ enableNowplayingCoverBackgroun
 const toggleBitrate = () => setSettings({ enableNowplayingBitrate: !settings.enableNowplayingBitrate });
 const togglePlayingPlatform = () => setSettings({ enableNowplayingPlatform: !settings.enableNowplayingPlatform });
 const setTheme = (theme: string) => setSettings({ theme });
+const setAutoChooseSource = (enabled: boolean) => setSettings({ enableAutoChooseSource: enabled });
+const setAutoChooseSourceList = (newList: string[]) => setSettings({ autoChooseSourceList: newList });
+
+const enableSource = (source: string) => {
+  if (settings.autoChooseSourceList.indexOf(source) > -1) {
+    return;
+  }
+  const newList = [...settings.autoChooseSourceList, source];
+  setAutoChooseSourceList(newList);
+};
+
+const disableSource = (source: string) => {
+  if (settings.autoChooseSourceList.indexOf(source) === -1) {
+    return;
+  }
+  const newList = settings.autoChooseSourceList.filter((i) => i !== source);
+  setAutoChooseSourceList(newList);
+};
+const fontWeightOptions = [
+  {
+    text: t('Extra Light'),
+    value: 200,
+  },
+  {
+    text: t('Light'),
+    value: 300,
+  },
+  {
+    text: t('Normal'),
+    value: 400,
+  },
+  {
+    text: t('Medium'),
+    value: 500,
+  },
+  {
+    text: t('Semi Bold'),
+    value: 600,
+  },
+  {
+    text: t('Bold'),
+    value: 700,
+  },
+  {
+    text: t('Extra Bold'),
+    value: 800,
+  }
+];
+
+const sourceList = [
+  {
+    name: 'netease',
+    displayId: '_NETEASE_MUSIC',
+  },
+  {
+    name: 'qq',
+    displayId: '_QQ_MUSIC',
+  },
+  {
+    name: 'kugou',
+    displayId: '_KUGOU_MUSIC',
+  },
+  {
+    name: 'kuwo',
+    displayId: '_KUWO_MUSIC',
+  },
+  {
+    name: 'bilibili',
+    displayId: '_BILIBILI_MUSIC',
+    searchable: false,
+  },
+  {
+    name: 'migu',
+    displayId: '_MIGU_MUSIC',
+  },
+  {
+    name: 'taihe',
+    displayId: '_TAIHE_MUSIC',
+  },
+];
 </script>
+<style>
+.settings-input {
+  margin-left: 10px;
+  padding: 5px;
+  text-align: left;
+  background-color: var(--content-background-color);
+  border: 1px solid var(--search-input-background-color);
+  border-radius: 4px;
+  margin-right: 4px;
+  color: var(--text-default-color);
+  transition: background-color 0.2s;
+}
+.settings-input:hover {
+  background: var(--search-input-background-color);
+}
+.setting-font-preview {
+  color: var(--lyric-default-color);
+  display: flex;
+  align-items: center;
+  height: 40px;
+  overflow: hidden;
+}
+</style>
