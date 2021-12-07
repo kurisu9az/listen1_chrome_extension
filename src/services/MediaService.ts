@@ -9,6 +9,8 @@ import taihe from '../provider/taihe';
 import localmusic from '../provider/localmusic';
 import myplaylist from '../provider/myplaylist';
 import useSettings from '../composition/settings';
+import customsource from '../provider/customsource';
+
 interface Provider {
   getPlaylist: (url: string) => any;
   search: (url: string) => any;
@@ -130,6 +132,14 @@ const PROVIDERS: {
     hidden: true,
     support_login: false,
     id: 'my'
+  },
+  {
+    name: 'custom',
+    instance: customsource,
+    searchable: false,
+    hidden: false,
+    support_login: false,
+    id: 'cs'
   }
 ];
 

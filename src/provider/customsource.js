@@ -3,6 +3,7 @@
  */
  import axios from 'axios';
  import { getParameterByName } from './lowebutil';
+ import MusicResource from './music_resource';
 
  const TRACK_ID_PREFIX = "cstrack"
  const PLATLIST_PREFIX = "csplaylist"
@@ -10,9 +11,9 @@
  const ARTIST_PREFIX = "csartist"
  const SOURCE = "customsource"
 
- export default class customsource {
+ export default class customsource extends MusicResource {
     
-    static parse_url(url) {
+    static async parseUrl(url) {
       let result;
       const match = /^custom:/.exec(url);
       if (match != null) {
@@ -22,14 +23,10 @@
           id: `${PLATLIST_PREFIX}_${playlist_url}`,
         };
       }
-      return {
-        success: (fn) => {
-          fn(result);
-        },
-      };
+      return result;
     }
 
-    static get_playlist(url) {
+    static getPlaylist(url) {
       const list_id = getParameterByName('list_id', url).split('_')[0];
       switch (list_id) {
         case PLATLIST_PREFIX:
@@ -71,37 +68,33 @@
       return track;
     }
 
-    static loadResult(url, prefix) {
+    static async loadResult(url, prefix) {
       const playlist_url = getParameterByName('list_id', url).split(prefix).pop();
 
       if (playlist_url == undefined || playlist_url == null) {
         return {
-          success: (fn) => 
-            fn({
-              info: {},
-              tracks: [],
-            })
+          info: {},
+          tracks: []
         }
       }
 
-      return {
-        success: (fn) => {
-          axios.get(playlist_url).then((response) => {
-            const { data } = response.data;
-            const info = {
-              cover_img_url: data.cover,
-              title: data.title,
-              id: `${prefix}${playlist_url}`,
-              source_url: `${playlist_url}`,
-            };
-            const tracks = data.tracks.map((item) => this.convert_song(item));
-            return fn({
-              info,
-              tracks,
-            });
-          });
-        },
+      const getResultInfo = async () => {
+        const { data } = (await axios.get(playlist_url)).data;
+        const info = {
+          cover_img_url: data.cover,
+          title: data.title,
+          id: `${prefix}${playlist_url}`,
+          source_url: `${playlist_url}`,
+        };
+        const tracks = data.tracks.map((item) => this.convert_song(item));
+
+        return {
+          info,
+          tracks,
+        };
       };
+
+      return await getResultInfo();
     }
 
 
