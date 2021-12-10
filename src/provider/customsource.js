@@ -17,7 +17,7 @@
       let result;
       const match = /^custom:/.exec(url);
       if (match != null) {
-        const playlist_url = url.slice(3)
+        const playlist_url = url.slice(7)
         result = {
           type: 'playlist',
           id: `${PLATLIST_PREFIX}_${playlist_url}`,
